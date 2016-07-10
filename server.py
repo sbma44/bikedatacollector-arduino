@@ -1,35 +1,16 @@
-from time import time
-import socketserver
+from SimpleWebSocketServer import SimpleWebSocketServer, WebSocket
 
-class MyTCPHandler(socketserver.BaseRequestHandler):
-    """
-    The RequestHandler class for our server.
+class SimpleEcho(WebSocket):
 
-    It is instantiated once per connection to the server, and must
-    override the handle() method to implement communication to the
-    client.
-    """
+    def handleMessage(self):
+        # echo message back to client
+        self.sendMessage(self.data.upper())
 
-    def handle(self):
-        print("received connection")
-        # self.request is the TCP socket connected to the client
-        sample_count = 0
-        start = time()
-        while True:
-            self.data = self.request.recv(1024).strip()
-            sample_count += 1
-            if sample_count % 100 == 0:
-                span = time() - start
-                start = time()
-                print("sampling rate: {:.2f} hz".format(100.0 / span))
+    def handleConnected(self):
+        print(self.address, 'connected')
 
-if __name__ == "__main__":
-    HOST, PORT = "0.0.0.0", 9999
+    def handleClose(self):
+        print(self.address, 'closed')
 
-    # Create the server, binding to localhost on port 8080
-    server = socketserver.TCPServer((HOST, PORT), MyTCPHandler)
-
-    # Activate the server; this will keep running until you
-    # interrupt the program with Ctrl-C
-    server.serve_forever()
-
+server = SimpleWebSocketServer('', 8000, SimpleEcho)
+server.serveforever()
