@@ -4,6 +4,7 @@ class SimpleEcho(WebSocket):
 
     def handleMessage(self):
         # echo message back to client
+        print(self.data)
         self.sendMessage(self.data.upper())
 
     def handleConnected(self):
