@@ -20,7 +20,7 @@
                   // Web Socket is connected, send data using send()
 
                   function intervalUpdate() {
-                     msg = 'timestamp: ' + +new Date();
+                     msg = (+new Date()) + '/' + Math.floor((+new Date() / 1000) % 30);
                      this.send(msg);
                      console.log(msg);
                   }
