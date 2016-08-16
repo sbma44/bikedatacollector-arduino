@@ -13,7 +13,7 @@ WiFiClient client;
 
 // sonar stuff
 #define MAX_CM 300
-int range = MAX_CM * 58; // 200 cm * 58 usec
+int range = MAX_CM * 58; // 300 cm * 58 usec
 #define SONAR_NUM 2
 unsigned int cm[SONAR_NUM];         // Where the ping distances are stored.
 Ultrasonic sonar[SONAR_NUM] = {
@@ -33,6 +33,29 @@ void ledFail(int x) {
     delay(50);
     digitalWrite(LEDPIN, LOW);
     delay(50);
+  }
+}
+
+void tryConnect() {
+  // Connect to the websocket server
+  if (client.connect(host, httpPort)) {
+    Serial.println("Connected");
+  } else {
+    Serial.println("Connection failed.");
+    delay(1000);
+    tryConnect();
+  }
+
+  // Handshake with the server
+  webSocketClient.path = path;
+  webSocketClient.host = host;
+  if (webSocketClient.handshake(client)) {
+    Serial.println("Handshake successful");
+    webSocketClient.sendData("RANGE:" + String(MAX_CM));
+  } else {
+    Serial.println("Handshake failed.");
+    delay(1000);
+    tryConnect();  
   }
 }
 
@@ -58,28 +81,7 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-  // Connect to the websocket server
-  if (client.connect(host, httpPort)) {
-    Serial.println("Connected");
-  } else {
-    Serial.println("Connection failed.");
-    while(1) {
-      ledFail(1);
-    }
-  }
-
-  // Handshake with the server
-  webSocketClient.path = path;
-  webSocketClient.host = host;
-  if (webSocketClient.handshake(client)) {
-    Serial.println("Handshake successful");
-    webSocketClient.sendData("RANGE:" + String(MAX_CM));
-  } else {
-    Serial.println("Handshake failed.");
-    while(1) {
-      ledFail(2);
-    }  
-  }
+  tryConnect();
 }
 
 void loop()
@@ -102,6 +104,8 @@ void loop()
       cm[i] = sonar[i].Ranging(CM);
       if (cm[i] != MAX_CM)
         found_something_interesting = true;
+       else
+        delayMicroseconds(range); // avoid echos
     }
     
     if (found_something_interesting || (noop > 30)) {
@@ -119,9 +123,9 @@ void loop()
     }
   } 
   else {
+    digitalWrite(LEDPIN, LOW);
     Serial.println("Client disconnected.");
-    while (1) {
-      ledFail(3);
-    }
+    delay(1000);
+    tryConnect();
   }
 }
